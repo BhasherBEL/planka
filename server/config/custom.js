@@ -20,18 +20,20 @@ module.exports.custom = {
 
   baseUrl: process.env.BASE_URL,
 
+  tokenExpiresIn: parseInt(process.env.TOKEN_EXPIRES_IN, 10) || 365,
+
   userAvatarsPath: path.join(sails.config.paths.public, 'user-avatars'),
   userAvatarsUrl: `${process.env.BASE_URL}/user-avatars`,
 
   projectBackgroundImagesPath: path.join(sails.config.paths.public, 'project-background-images'),
   projectBackgroundImagesUrl: `${process.env.BASE_URL}/project-background-images`,
 
-  attachmentsPath: path.join(sails.config.paths.public, 'attachments'),
+  attachmentsPath: path.join(sails.config.appPath, 'private', 'attachments'),
   attachmentsUrl: `${process.env.BASE_URL}/attachments`,
 
   oidcIssuer: process.env.OIDC_ISSUER,
   oidcClientId: process.env.OIDC_CLIENT_ID,
   oidcClientSecret: process.env.OIDC_CLIENT_SECRET,
-  oidcRolesAttribute: process.env.OIDC_ROLES_ATTRIBUTE ?? 'groups',
-  oidcAdminRoles: process.env.OIDC_ADMIN_ROLES.split(",") ?? [],
+  oidcRolesAttribute: process.env.OIDC_ROLES_ATTRIBUTE || 'groups',
+  oidcAdminRoles: process.env.OIDC_ADMIN_ROLES.split(',') || [],
 };

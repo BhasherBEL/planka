@@ -1,3 +1,15 @@
+const valuesValidator = (value) => {
+  if (!_.isPlainObject(value)) {
+    return false;
+  }
+
+  if (!_.isUndefined(value.position) && !_.isFinite(value.position)) {
+    return false;
+  }
+
+  return true;
+};
+
 module.exports = {
   inputs: {
     record: {
@@ -6,6 +18,7 @@ module.exports = {
     },
     values: {
       type: 'json',
+      custom: valuesValidator,
       required: true,
     },
     request: {
@@ -14,7 +27,36 @@ module.exports = {
   },
 
   async fn(inputs) {
-    const label = await Label.updateOne(inputs.record.id).set(inputs.values);
+    const { values } = inputs;
+
+    if (!_.isUndefined(values.position)) {
+      const labels = await sails.helpers.boards.getLabels(inputs.record.boardId, inputs.record.id);
+
+      const { position, repositions } = sails.helpers.utils.insertToPositionables(
+        values.position,
+        labels,
+      );
+
+      values.position = position;
+
+      repositions.forEach(async ({ id, position: nextPosition }) => {
+        await Label.update({
+          id,
+          boardId: inputs.record.boardId,
+        }).set({
+          position: nextPosition,
+        });
+
+        sails.sockets.broadcast(`board:${inputs.record.boardId}`, 'labelUpdate', {
+          item: {
+            id,
+            position: nextPosition,
+          },
+        });
+      });
+    }
+
+    const label = await Label.updateOne(inputs.record.id).set({ ...values });
 
     if (label) {
       sails.sockets.broadcast(

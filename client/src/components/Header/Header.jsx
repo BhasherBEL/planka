@@ -3,18 +3,24 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 import { Icon, Menu } from 'semantic-ui-react';
+import { usePopup } from '../../lib/popup';
 
 import Paths from '../../constants/Paths';
-import NotificationsPopup from './NotificationsPopup';
-import UserPopup from '../UserPopup';
+import NotificationsStep from './NotificationsStep';
+import UserStep from '../UserStep';
 
 import styles from './Header.module.scss';
+
+const POPUP_PROPS = {
+  position: 'bottom right',
+};
 
 const Header = React.memo(
   ({
     project,
     user,
     notifications,
+    isLogouting,
     canEditProject,
     canEditUsers,
     onProjectSettingsClick,
@@ -28,6 +34,9 @@ const Header = React.memo(
         onProjectSettingsClick();
       }
     }, [canEditProject, onProjectSettingsClick]);
+
+    const NotificationsPopup = usePopup(NotificationsStep, POPUP_PROPS);
+    const UserPopup = usePopup(UserStep, POPUP_PROPS);
 
     return (
       <div className={styles.wrapper}>
@@ -75,7 +84,11 @@ const Header = React.memo(
                 )}
               </Menu.Item>
             </NotificationsPopup>
-            <UserPopup onSettingsClick={onUserSettingsClick} onLogout={onLogout}>
+            <UserPopup
+              isLogouting={isLogouting}
+              onSettingsClick={onUserSettingsClick}
+              onLogout={onLogout}
+            >
               <Menu.Item className={classNames(styles.item, styles.itemHoverable)}>
                 {user.name}
               </Menu.Item>
@@ -93,6 +106,7 @@ Header.propTypes = {
   user: PropTypes.object.isRequired,
   notifications: PropTypes.array.isRequired,
   /* eslint-enable react/forbid-prop-types */
+  isLogouting: PropTypes.bool.isRequired,
   canEditProject: PropTypes.bool.isRequired,
   canEditUsers: PropTypes.bool.isRequired,
   onProjectSettingsClick: PropTypes.func.isRequired,

@@ -4,6 +4,8 @@ const Errors = {
   },
 };
 
+const avatarUrlValidator = (value) => _.isNull(value);
+
 module.exports = {
   inputs: {
     id: {
@@ -20,7 +22,7 @@ module.exports = {
     },
     avatarUrl: {
       type: 'json',
-      custom: (value) => _.isNull(value),
+      custom: avatarUrlValidator,
     },
     phone: {
       type: 'string',
@@ -28,6 +30,11 @@ module.exports = {
       allowNull: true,
     },
     organization: {
+      type: 'string',
+      isNotEmptyString: true,
+      allowNull: true,
+    },
+    language: {
       type: 'string',
       isNotEmptyString: true,
       allowNull: true,
@@ -60,16 +67,24 @@ module.exports = {
       throw Errors.USER_NOT_FOUND;
     }
 
-    const values = _.pick(inputs, [
-      'isAdmin',
-      'name',
-      'avatarUrl',
-      'phone',
-      'organization',
-      'subscribeToOwnCards',
-    ]);
+    const values = {
+      ..._.pick(inputs, [
+        'isAdmin',
+        'name',
+        'phone',
+        'organization',
+        'language',
+        'subscribeToOwnCards',
+      ]),
+      avatar: inputs.avatarUrl,
+    };
 
-    user = await sails.helpers.users.updateOne(user, values, this.req);
+    user = await sails.helpers.users.updateOne.with({
+      values,
+      record: user,
+      user: currentUser,
+      request: this.req,
+    });
 
     if (!user) {
       throw Errors.USER_NOT_FOUND;

@@ -1,11 +1,13 @@
-import { call, put } from 'redux-saga/effects';
+import { call, put, take } from 'redux-saga/effects';
 
-import { fetchCoreRequest } from '../requests';
-import { initializeCore } from '../../../actions';
+import request from '../request';
+import requests from '../requests';
+import actions from '../../../actions';
+import api from '../../../api';
 import i18n from '../../../i18n';
+import { removeAccessToken } from '../../../utils/access-token-storage';
 
-// eslint-disable-next-line import/prefer-default-export
-export function* initializeCoreService() {
+export function* initializeCore() {
   const {
     user,
     board,
@@ -21,14 +23,15 @@ export function* initializeCoreService() {
     cardLabels,
     tasks,
     attachments,
-    actions,
+    activities,
     notifications,
-  } = yield call(fetchCoreRequest); // TODO: handle error
+  } = yield call(requests.fetchCore); // TODO: handle error
 
-  yield call(i18n.loadCoreLocale, i18n.language);
+  yield call(i18n.changeLanguage, user.language);
+  yield call(i18n.loadCoreLocale);
 
   yield put(
-    initializeCore(
+    actions.initializeCore(
       user,
       board,
       users,
@@ -43,8 +46,40 @@ export function* initializeCoreService() {
       cardLabels,
       tasks,
       attachments,
-      actions,
+      activities,
       notifications,
     ),
   );
 }
+
+export function* changeCoreLanguage(language) {
+  if (language === null) {
+    yield call(i18n.detectLanguage);
+    yield call(i18n.loadCoreLocale);
+    yield call(i18n.changeLanguage, i18n.resolvedLanguage);
+  } else {
+    yield call(i18n.loadCoreLocale, language);
+    yield call(i18n.changeLanguage, language);
+  }
+}
+
+export function* logout(invalidateAccessToken = true) {
+  yield call(removeAccessToken);
+
+  if (invalidateAccessToken) {
+    yield put(actions.logout.invalidateAccessToken());
+
+    try {
+      yield call(request, api.deleteCurrentAccessToken);
+    } catch (error) {} // eslint-disable-line no-empty
+  }
+
+  yield put(actions.logout());
+  yield take();
+}
+
+export default {
+  initializeCore,
+  changeCoreLanguage,
+  logout,
+};

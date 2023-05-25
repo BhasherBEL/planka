@@ -22,6 +22,14 @@ module.exports = {
       regex: /^[0-9]+$/,
       required: true,
     },
+    role: {
+      type: 'string',
+      isIn: Object.values(BoardMembership.Roles),
+      required: true,
+    },
+    canComment: {
+      type: 'boolean',
+    },
   },
 
   exits: {
@@ -58,8 +66,17 @@ module.exports = {
       throw Error.USER_NOT_FOUND;
     }
 
-    const boardMembership = await sails.helpers.boardMemberships
-      .createOne(user, board, this.req)
+    const values = _.pick(inputs, ['role', 'canComment']);
+
+    const boardMembership = await sails.helpers.boardMemberships.createOne
+      .with({
+        values: {
+          ...values,
+          board,
+          user,
+        },
+        request: this.req,
+      })
       .intercept('userAlreadyBoardMember', () => Errors.USER_ALREADY_BOARD_MEMBER);
 
     return {

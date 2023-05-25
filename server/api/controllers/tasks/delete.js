@@ -1,4 +1,7 @@
 const Errors = {
+  NOT_ENOUGH_RIGHTS: {
+    notEnoughRights: 'Not enough rights',
+  },
   TASK_NOT_FOUND: {
     taskNotFound: 'Task not found',
   },
@@ -14,6 +17,9 @@ module.exports = {
   },
 
   exits: {
+    notEnoughRights: {
+      responseType: 'forbidden',
+    },
     taskNotFound: {
       responseType: 'notFound',
     },
@@ -29,13 +35,24 @@ module.exports = {
     let { task } = path;
     const { board } = path;
 
-    const isBoardMember = await sails.helpers.users.isBoardMember(currentUser.id, board.id);
+    const boardMembership = await BoardMembership.findOne({
+      boardId: board.id,
+      userId: currentUser.id,
+    });
 
-    if (!isBoardMember) {
+    if (!boardMembership) {
       throw Errors.TASK_NOT_FOUND; // Forbidden
     }
 
-    task = await sails.helpers.tasks.deleteOne(task, board, this.req);
+    if (boardMembership.role !== BoardMembership.Roles.EDITOR) {
+      throw Errors.NOT_ENOUGH_RIGHTS;
+    }
+
+    task = await sails.helpers.tasks.deleteOne.with({
+      board,
+      record: task,
+      request: this.req,
+    });
 
     if (!task) {
       throw Errors.TASK_NOT_FOUND;

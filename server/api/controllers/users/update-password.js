@@ -1,4 +1,7 @@
 const bcrypt = require('bcrypt');
+const zxcvbn = require('zxcvbn');
+
+const { getRemoteAddress } = require('../../../utils/remoteAddress');
 
 const Errors = {
   USER_NOT_FOUND: {
@@ -9,6 +12,8 @@ const Errors = {
   },
 };
 
+const passwordValidator = (value) => zxcvbn(value).score >= 2; // TODO: move to config
+
 module.exports = {
   inputs: {
     id: {
@@ -18,6 +23,7 @@ module.exports = {
     },
     password: {
       type: 'string',
+      custom: passwordValidator,
       required: true,
     },
     currentPassword: {
@@ -60,10 +66,34 @@ module.exports = {
     }
 
     const values = _.pick(inputs, ['password']);
-    user = await sails.helpers.users.updateOne(user, values, this.req);
+
+    user = await sails.helpers.users.updateOne.with({
+      values,
+      record: user,
+      user: currentUser,
+      request: this.req,
+    });
 
     if (!user) {
       throw Errors.USER_NOT_FOUND;
+    }
+
+    if (user.id === currentUser.id) {
+      const accessToken = sails.helpers.utils.createToken(user.id, user.passwordUpdatedAt);
+
+      await Session.create({
+        accessToken,
+        userId: user.id,
+        remoteAddress: getRemoteAddress(this.req),
+        userAgent: this.req.headers['user-agent'],
+      });
+
+      return {
+        item: user,
+        included: {
+          accessTokens: [accessToken],
+        },
+      };
     }
 
     return {

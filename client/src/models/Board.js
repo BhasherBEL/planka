@@ -1,13 +1,13 @@
-import { Model, attr, fk, many } from 'redux-orm';
+import { attr, fk, many } from 'redux-orm';
 
+import BaseModel from './BaseModel';
 import ActionTypes from '../constants/ActionTypes';
 
-export default class extends Model {
+export default class extends BaseModel {
   static modelName = 'Board';
 
   static fields = {
     id: attr(),
-    type: attr(),
     position: attr(),
     name: attr(),
     isFetching: attr({
@@ -30,11 +30,12 @@ export default class extends Model {
   static reducer({ type, payload }, Board) {
     switch (type) {
       case ActionTypes.LOCATION_CHANGE_HANDLE:
-      case ActionTypes.BOARD_FETCH__SUCCESS:
-        Board.upsert({
-          ...payload.board,
-          isFetching: false,
-        });
+        if (payload.board) {
+          Board.upsert({
+            ...payload.board,
+            isFetching: false,
+          });
+        }
 
         break;
       case ActionTypes.LOCATION_CHANGE_HANDLE__BOARD_FETCH:
@@ -124,7 +125,10 @@ export default class extends Model {
         break;
       case ActionTypes.BOARD_CREATE__SUCCESS:
         Board.withId(payload.localId).delete();
+        Board.upsert(payload.board);
 
+        break;
+      case ActionTypes.BOARD_FETCH__SUCCESS:
         Board.upsert({
           ...payload.board,
           isFetching: false,
@@ -171,16 +175,34 @@ export default class extends Model {
     return this.memberships.orderBy('id');
   }
 
+  getOrderedLabelsQuerySet() {
+    return this.labels.orderBy('position');
+  }
+
   getOrderedListsQuerySet() {
     return this.lists.orderBy('position');
   }
 
-  hasMemberUser(userId) {
+  getMembershipModelForUser(userId) {
+    return this.memberships
+      .filter({
+        userId,
+      })
+      .first();
+  }
+
+  hasMembershipForUser(userId) {
     return this.memberships
       .filter({
         userId,
       })
       .exists();
+  }
+
+  isAvailableForUser(userId) {
+    return (
+      this.project && (this.project.hasManagerForUser(userId) || this.hasMembershipForUser(userId))
+    );
   }
 
   deleteRelated(exceptMemberUserId) {

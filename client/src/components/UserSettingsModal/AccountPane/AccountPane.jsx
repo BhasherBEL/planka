@@ -1,14 +1,16 @@
 import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Button, Divider, Header, Tab } from 'semantic-ui-react';
+import { Button, Divider, Dropdown, Header, Tab } from 'semantic-ui-react';
+import { usePopup } from '../../../lib/popup';
 
-import InformationEdit from './InformationEdit';
-import AvatarEditPopup from './AvatarEditPopup';
-import UsernameEditPopup from './UsernameEditPopup';
-import EmailEditPopup from './EmailEditPopup';
-import PasswordEditPopup from './PasswordEditPopup';
+import locales from '../../../locales';
+import AvatarEditStep from './AvatarEditStep';
 import User from '../../User';
+import UserInformationEdit from '../../UserInformationEdit';
+import UserUsernameEditStep from '../../UserUsernameEditStep';
+import UserEmailEditStep from '../../UserEmailEditStep';
+import UserPasswordEditStep from '../../UserPasswordEditStep';
 
 import styles from './AccountPane.module.scss';
 
@@ -20,12 +22,14 @@ const AccountPane = React.memo(
     avatarUrl,
     phone,
     organization,
+    language,
     isAvatarUpdating,
     usernameUpdateForm,
     emailUpdateForm,
     passwordUpdateForm,
     onUpdate,
     onAvatarUpdate,
+    onLanguageUpdate,
     onUsernameUpdate,
     onUsernameUpdateMessageDismiss,
     onEmailUpdate,
@@ -41,6 +45,18 @@ const AccountPane = React.memo(
       });
     }, [onUpdate]);
 
+    const handleLanguageChange = useCallback(
+      (_, { value }) => {
+        onLanguageUpdate(value === 'auto' ? null : value); // FIXME: hack
+      },
+      [onLanguageUpdate],
+    );
+
+    const AvatarEditPopup = usePopup(AvatarEditStep);
+    const UserUsernameEditPopup = usePopup(UserUsernameEditStep);
+    const UserEmailEditPopup = usePopup(UserEmailEditStep);
+    const UserPasswordEditPopup = usePopup(UserPasswordEditStep);
+
     return (
       <Tab.Pane attached={false} className={styles.wrapper}>
         <AvatarEditPopup
@@ -52,7 +68,7 @@ const AccountPane = React.memo(
         </AvatarEditPopup>
         <br />
         <br />
-        <InformationEdit
+        <UserInformationEdit
           defaultData={{
             name,
             phone,
@@ -62,13 +78,40 @@ const AccountPane = React.memo(
         />
         <Divider horizontal section>
           <Header as="h4">
+            {t('common.language', {
+              context: 'title',
+            })}
+          </Header>
+        </Divider>
+        <Dropdown
+          fluid
+          selection
+          options={[
+            {
+              key: 'auto',
+              value: 'auto',
+              text: t('common.detectAutomatically'),
+            },
+            ...locales.map((locale) => ({
+              key: locale.language,
+              value: locale.language,
+              flag: locale.country,
+              text: locale.name,
+            })),
+          ]}
+          value={language || 'auto'}
+          onChange={handleLanguageChange}
+        />
+        <Divider horizontal section>
+          <Header as="h4">
             {t('common.authentication', {
               context: 'title',
             })}
           </Header>
         </Divider>
         <div className={styles.action}>
-          <UsernameEditPopup
+          <UserUsernameEditPopup
+            usePasswordConfirmation
             defaultData={usernameUpdateForm.data}
             username={username}
             isSubmitting={usernameUpdateForm.isSubmitting}
@@ -81,10 +124,11 @@ const AccountPane = React.memo(
                 context: 'title',
               })}
             </Button>
-          </UsernameEditPopup>
+          </UserUsernameEditPopup>
         </div>
         <div className={styles.action}>
-          <EmailEditPopup
+          <UserEmailEditPopup
+            usePasswordConfirmation
             defaultData={emailUpdateForm.data}
             email={email}
             isSubmitting={emailUpdateForm.isSubmitting}
@@ -97,10 +141,11 @@ const AccountPane = React.memo(
                 context: 'title',
               })}
             </Button>
-          </EmailEditPopup>
+          </UserEmailEditPopup>
         </div>
         <div className={styles.action}>
-          <PasswordEditPopup
+          <UserPasswordEditPopup
+            usePasswordConfirmation
             defaultData={passwordUpdateForm.data}
             isSubmitting={passwordUpdateForm.isSubmitting}
             error={passwordUpdateForm.error}
@@ -112,7 +157,7 @@ const AccountPane = React.memo(
                 context: 'title',
               })}
             </Button>
-          </PasswordEditPopup>
+          </UserPasswordEditPopup>
         </div>
       </Tab.Pane>
     );
@@ -126,6 +171,7 @@ AccountPane.propTypes = {
   avatarUrl: PropTypes.string,
   phone: PropTypes.string,
   organization: PropTypes.string,
+  language: PropTypes.string,
   isAvatarUpdating: PropTypes.bool.isRequired,
   /* eslint-disable react/forbid-prop-types */
   usernameUpdateForm: PropTypes.object.isRequired,
@@ -134,6 +180,7 @@ AccountPane.propTypes = {
   /* eslint-enable react/forbid-prop-types */
   onUpdate: PropTypes.func.isRequired,
   onAvatarUpdate: PropTypes.func.isRequired,
+  onLanguageUpdate: PropTypes.func.isRequired,
   onUsernameUpdate: PropTypes.func.isRequired,
   onUsernameUpdateMessageDismiss: PropTypes.func.isRequired,
   onEmailUpdate: PropTypes.func.isRequired,
@@ -147,6 +194,7 @@ AccountPane.defaultProps = {
   avatarUrl: undefined,
   phone: undefined,
   organization: undefined,
+  language: undefined,
 };
 
 export default AccountPane;

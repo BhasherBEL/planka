@@ -1,4 +1,7 @@
 const Errors = {
+  NOT_ENOUGH_RIGHTS: {
+    notEnoughRights: 'Not enough rights',
+  },
   LABEL_NOT_FOUND: {
     labelNotFound: 'Label not found',
   },
@@ -11,6 +14,9 @@ module.exports = {
       regex: /^[0-9]+$/,
       required: true,
     },
+    position: {
+      type: 'number',
+    },
     name: {
       type: 'string',
       isNotEmptyString: true,
@@ -19,11 +25,13 @@ module.exports = {
     color: {
       type: 'string',
       isIn: Label.COLORS,
-      required: true,
     },
   },
 
   exits: {
+    notEnoughRights: {
+      responseType: 'forbidden',
+    },
     labelNotFound: {
       responseType: 'notFound',
     },
@@ -36,14 +44,26 @@ module.exports = {
       .getProjectPath(inputs.id)
       .intercept('pathNotFound', () => Errors.LABEL_NOT_FOUND);
 
-    const isBoardMember = await sails.helpers.users.isBoardMember(currentUser.id, label.boardId);
+    const boardMembership = await BoardMembership.findOne({
+      boardId: label.boardId,
+      userId: currentUser.id,
+    });
 
-    if (!isBoardMember) {
+    if (!boardMembership) {
       throw Errors.LABEL_NOT_FOUND; // Forbidden
     }
 
-    const values = _.pick(inputs, ['name', 'color']);
-    label = await sails.helpers.labels.updateOne(label, values, this.req);
+    if (boardMembership.role !== BoardMembership.Roles.EDITOR) {
+      throw Errors.NOT_ENOUGH_RIGHTS;
+    }
+
+    const values = _.pick(inputs, ['position', 'name', 'color']);
+
+    label = await sails.helpers.labels.updateOne.with({
+      values,
+      record: label,
+      request: this.req,
+    });
 
     return {
       item: label,

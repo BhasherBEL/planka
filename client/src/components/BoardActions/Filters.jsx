@@ -1,11 +1,12 @@
 import React, { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
+import { usePopup } from '../../lib/popup';
 
 import User from '../User';
 import Label from '../Label';
-import BoardMembershipsPopup from '../BoardMembershipsPopup';
-import LabelsPopup from '../LabelsPopup';
+import BoardMembershipsStep from '../BoardMembershipsStep';
+import LabelsStep from '../LabelsStep';
 
 import styles from './Filters.module.scss';
 
@@ -15,12 +16,14 @@ const Filters = React.memo(
     labels,
     allBoardMemberships,
     allLabels,
+    canEdit,
     onUserAdd,
     onUserRemove,
     onLabelAdd,
     onLabelRemove,
     onLabelCreate,
     onLabelUpdate,
+    onLabelMove,
     onLabelDelete,
   }) => {
     const [t] = useTranslation();
@@ -39,15 +42,16 @@ const Filters = React.memo(
       [onLabelRemove],
     );
 
+    const BoardMembershipsPopup = usePopup(BoardMembershipsStep);
+    const LabelsPopup = usePopup(LabelsStep);
+
     return (
       <>
         <span className={styles.filter}>
           <BoardMembershipsPopup
             items={allBoardMemberships}
             currentUserIds={users.map((user) => user.id)}
-            title={t('common.filterByMembers', {
-              context: 'title',
-            })}
+            title="common.filterByMembers"
             onUserSelect={onUserAdd}
             onUserDeselect={onUserRemove}
           >
@@ -71,13 +75,13 @@ const Filters = React.memo(
           <LabelsPopup
             items={allLabels}
             currentIds={labels.map((label) => label.id)}
-            title={t('common.filterByLabels', {
-              context: 'title',
-            })}
+            title="common.filterByLabels"
+            canEdit={canEdit}
             onSelect={onLabelAdd}
             onDeselect={onLabelRemove}
             onCreate={onLabelCreate}
             onUpdate={onLabelUpdate}
+            onMove={onLabelMove}
             onDelete={onLabelDelete}
           >
             <button type="button" className={styles.filterButton}>
@@ -108,12 +112,14 @@ Filters.propTypes = {
   allBoardMemberships: PropTypes.array.isRequired,
   allLabels: PropTypes.array.isRequired,
   /* eslint-enable react/forbid-prop-types */
+  canEdit: PropTypes.bool.isRequired,
   onUserAdd: PropTypes.func.isRequired,
   onUserRemove: PropTypes.func.isRequired,
   onLabelAdd: PropTypes.func.isRequired,
   onLabelRemove: PropTypes.func.isRequired,
   onLabelCreate: PropTypes.func.isRequired,
   onLabelUpdate: PropTypes.func.isRequired,
+  onLabelMove: PropTypes.func.isRequired,
   onLabelDelete: PropTypes.func.isRequired,
 };
 

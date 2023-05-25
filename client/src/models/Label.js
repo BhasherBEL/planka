@@ -1,12 +1,14 @@
-import { Model, attr, fk } from 'redux-orm';
+import { attr, fk } from 'redux-orm';
 
+import BaseModel from './BaseModel';
 import ActionTypes from '../constants/ActionTypes';
 
-export default class extends Model {
+export default class extends BaseModel {
   static modelName = 'Label';
 
   static fields = {
     id: attr(),
+    position: attr(),
     name: attr(),
     color: attr(),
     boardId: fk({

@@ -1,8 +1,9 @@
-import { Model, attr, fk } from 'redux-orm';
+import { attr, fk } from 'redux-orm';
 
+import BaseModel from './BaseModel';
 import ActionTypes from '../constants/ActionTypes';
 
-export default class extends Model {
+export default class extends BaseModel {
   static modelName = 'List';
 
   static fields = {
@@ -83,7 +84,7 @@ export default class extends Model {
     return this.cards.orderBy('position');
   }
 
-  getOrderedFilteredCardsModelArray() {
+  getFilteredOrderedCardsModelArray() {
     let cardModels = this.getOrderedCardsQuerySet().toModelArray();
 
     const filterUserIds = this.board.filterUsers.toRefArray().map((user) => user.id);

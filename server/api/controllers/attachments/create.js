@@ -1,6 +1,15 @@
+const util = require('util');
+const { v4: uuid } = require('uuid');
+
 const Errors = {
+  NOT_ENOUGH_RIGHTS: {
+    notEnoughRights: 'Not enough rights',
+  },
   CARD_NOT_FOUND: {
     cardNotFound: 'Card not found',
+  },
+  NO_FILE_WAS_UPLOADED: {
+    noFileWasUploaded: 'No file was uploaded',
   },
 };
 
@@ -18,8 +27,14 @@ module.exports = {
   },
 
   exits: {
+    notEnoughRights: {
+      responseType: 'forbidden',
+    },
     cardNotFound: {
       responseType: 'notFound',
+    },
+    noFileWasUploaded: {
+      responseType: 'unprocessableEntity',
     },
     uploadError: {
       responseType: 'unprocessableEntity',
@@ -33,41 +48,52 @@ module.exports = {
       .getProjectPath(inputs.cardId)
       .intercept('pathNotFound', () => Errors.CARD_NOT_FOUND);
 
-    const isBoardMember = await sails.helpers.users.isBoardMember(currentUser.id, card.boardId);
+    const boardMembership = await BoardMembership.findOne({
+      boardId: card.boardId,
+      userId: currentUser.id,
+    });
 
-    if (!isBoardMember) {
+    if (!boardMembership) {
       throw Errors.CARD_NOT_FOUND; // Forbidden
     }
 
-    this.req
-      .file('file')
-      .upload(sails.helpers.utils.createAttachmentReceiver(), async (error, files) => {
-        if (error) {
-          return exits.uploadError(error.message);
-        }
+    if (boardMembership.role !== BoardMembership.Roles.EDITOR) {
+      throw Errors.NOT_ENOUGH_RIGHTS;
+    }
 
-        if (files.length === 0) {
-          return exits.uploadError('No file was uploaded');
-        }
+    const upload = util.promisify((options, callback) =>
+      this.req.file('file').upload(options, (error, files) => callback(error, files)),
+    );
 
-        const file = files[0];
-
-        const attachment = await sails.helpers.attachments.createOne(
-          {
-            dirname: file.extra.dirname,
-            filename: file.filename,
-            isImage: file.extra.isImage,
-            name: file.extra.name,
-          },
-          currentUser,
-          card,
-          inputs.requestId,
-          this.req,
-        );
-
-        return exits.success({
-          item: attachment.toJSON(),
-        });
+    let files;
+    try {
+      files = await upload({
+        saveAs: uuid(),
+        maxBytes: null,
       });
+    } catch (error) {
+      return exits.uploadError(error.message); // TODO: add error
+    }
+
+    if (files.length === 0) {
+      throw Errors.NO_FILE_WAS_UPLOADED;
+    }
+
+    const file = _.last(files);
+    const fileData = await sails.helpers.attachments.processUploadedFile(file);
+
+    const attachment = await sails.helpers.attachments.createOne.with({
+      values: {
+        ...fileData,
+        card,
+        creatorUser: currentUser,
+      },
+      requestId: inputs.requestId,
+      request: this.req,
+    });
+
+    return exits.success({
+      item: attachment,
+    });
   },
 };

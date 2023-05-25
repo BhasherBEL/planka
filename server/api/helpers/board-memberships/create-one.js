@@ -1,11 +1,24 @@
+const valuesValidator = (value) => {
+  if (!_.isPlainObject(value)) {
+    return false;
+  }
+
+  if (!_.isPlainObject(value.board)) {
+    return false;
+  }
+
+  if (!_.isPlainObject(value.user)) {
+    return false;
+  }
+
+  return true;
+};
+
 module.exports = {
   inputs: {
-    user: {
+    values: {
       type: 'ref',
-      required: true,
-    },
-    board: {
-      type: 'ref',
+      custom: valuesValidator,
       required: true,
     },
     request: {
@@ -18,9 +31,20 @@ module.exports = {
   },
 
   async fn(inputs) {
+    const { values } = inputs;
+
+    if (values.role === BoardMembership.Roles.EDITOR) {
+      delete values.canComment;
+    } else if (values.role === BoardMembership.Roles.VIEWER) {
+      if (_.isNil(values.canComment)) {
+        values.canComment = false;
+      }
+    }
+
     const boardMembership = await BoardMembership.create({
-      boardId: inputs.board.id,
-      userId: inputs.user.id,
+      ...values,
+      boardId: values.board.id,
+      userId: values.user.id,
     })
       .intercept('E_UNIQUE', 'userAlreadyBoardMember')
       .fetch();

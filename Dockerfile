@@ -1,57 +1,44 @@
-FROM node:lts AS client-builder
+FROM ghcr.io/plankanban/planka:base-latest as server-dependencies
 
 WORKDIR /app
 
-COPY client .
+COPY server/package.json server/package-lock.json .
 
 RUN npm install npm@latest --global \
-  && npm install \
-  && npm run build
+  && npm clean-install --omit=dev
 
-FROM node:lts-alpine
+FROM node:lts AS client
 
 WORKDIR /app
 
-COPY server .
-COPY docker-start.sh start.sh
+COPY client/package.json client/package-lock.json .
 
-ARG ALPINE_VERSION=3.12
-ARG VIPS_VERSION=8.10.2
+RUN npm install npm@latest --global \
+  && npm clean-install --omit=dev
 
-RUN apk -U upgrade \
-  && apk add \
-  bash giflib glib lcms2 libexif \
-  libgsf libjpeg-turbo libpng librsvg libwebp \
-  orc pango tiff \
-  --repository https://alpine.global.ssl.fastly.net/alpine/v${ALPINE_VERSION}/community/ \
-  --repository https://alpine.global.ssl.fastly.net/alpine/v${ALPINE_VERSION}/main/ \
-  --no-cache \
-  && apk add \
-  build-base giflib-dev glib-dev lcms2-dev libexif-dev \
-  libgsf-dev libjpeg-turbo-dev libpng-dev librsvg-dev libwebp-dev \
-  orc-dev pango-dev tiff-dev \
-  --virtual vips-dependencies \
-  --repository https://alpine.global.ssl.fastly.net/alpine/v${ALPINE_VERSION}/community/ \
-  --repository https://alpine.global.ssl.fastly.net/alpine/v${ALPINE_VERSION}/main/ \
-  --no-cache \
-  && wget -O- https://github.com/libvips/libvips/releases/download/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.gz | tar xzC /tmp \
-  && cd /tmp/vips-${VIPS_VERSION} \
-  && ./configure \
-  && make \
-  && make install-strip \
-  && cd $OLDPWD \
-  && rm -rf /tmp/vips-${VIPS_VERSION} \
-  && npm install npm@latest --global \
-  && npm install --production \
-  && apk del vips-dependencies --purge \
-  && chmod +x start.sh
+COPY client .
+RUN DISABLE_ESLINT_PLUGIN=true npm run build
 
-COPY --from=client-builder /app/build public
-COPY --from=client-builder /app/build/index.html views
+FROM ghcr.io/plankanban/planka:base-latest
+
+RUN apk del vips-dependencies --purge
+
+USER node
+WORKDIR /app
+
+COPY --chown=node:node start.sh .
+COPY --chown=node:node server .
+
+RUN mv .env.sample .env
+
+COPY --from=server-dependencies --chown=node:node /app/node_modules node_modules
+
+COPY --from=client --chown=node:node /app/build public
+COPY --from=client --chown=node:node /app/build/index.html views/index.ejs
 
 VOLUME /app/public/user-avatars
 VOLUME /app/public/project-background-images
-VOLUME /app/public/attachments
+VOLUME /app/private/attachments
 
 EXPOSE 1337
 

@@ -2,7 +2,7 @@ version: '3'
 
 services:
   planka:
-    image: meltyshev/planka:latest
+    image: ghcr.io/plankanban/planka:latest
     command: >
       bash -c
         "for i in `seq 1 30`; do
@@ -15,7 +15,7 @@ services:
     volumes:
       - user-avatars:/app/public/user-avatars
       - project-background-images:/app/public/project-background-images
-      - attachments:/app/public/attachments
+      - attachments:/app/private/attachments
     ports:
       - 3000:1337
     environment:
@@ -23,11 +23,19 @@ services:
       - TRUST_PROXY=0
       - DATABASE_URL=postgresql://postgres@postgres/planka
       - SECRET_KEY=notsecretkey
+
+      # related: https://github.com/knex/knex/issues/2354
+      # As knex does not pass query parameters from the connection string we
+      # have to use environment variables in order to pass the desired values, e.g.
+      # - PGSSLMODE=<value>
+
+      # Configure knex to accept SSL certificates
+      # - KNEX_REJECT_UNAUTHORIZED_SSL_CERTIFICATE=false
     depends_on:
       - postgres
 
   postgres:
-    image: postgres:alpine
+    image: postgres:14-alpine
     restart: unless-stopped
     volumes:
       - db-data:/var/lib/postgresql/data

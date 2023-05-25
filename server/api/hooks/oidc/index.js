@@ -1,7 +1,6 @@
 const openidClient = require('openid-client');
 
 module.exports = function oidcServiceHook(sails) {
-
   let client = null;
 
   return {
@@ -16,7 +15,7 @@ module.exports = function oidcServiceHook(sails) {
         client = new issuer.Client({
           client_id: sails.config.custom.oidcClientId,
           client_secret: sails.config.custom.oidcClientSecret,
-          redirect_uris: [sails.config.custom.baseUrl + "/login"],
+          redirect_uris: [`${sails.config.custom.baseUrl}/login`],
           response_types: ['code'],
           response_mode: ['fragment'],
         });
@@ -30,6 +29,6 @@ module.exports = function oidcServiceHook(sails) {
 
     isActive() {
       return client !== null;
-    }
+    },
   };
 };

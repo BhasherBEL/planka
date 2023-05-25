@@ -1,29 +1,29 @@
-import fromPairs from 'lodash/fromPairs';
+import cs from './cs';
+import da from './da';
+import de from './de';
+import en from './en';
+import es from './es';
+import fr from './fr';
+import it from './it';
+import ja from './ja';
+import ko from './ko';
+import pl from './pl';
+import ru from './ru';
+import sk from './sk';
+import sv from './sv';
+import uz from './uz';
+import zh from './zh';
 
-import cs from './cs/embed';
-import da from './da/embed';
-import de from './de/embed';
-import en from './en/embed';
-import es from './es/embed';
-import fr from './fr/embed';
-import ja from './ja/embed';
-import pl from './pl/embed';
-import ru from './ru/embed';
-import uz from './uz/embed';
+const locales = [cs, da, de, en, es, fr, it, ja, ko, pl, ru, sk, sv, uz, zh];
 
-const localePairs = [
-  ['cs', cs],
-  ['da', da],
-  ['de', de],
-  ['en', en],
-  ['es', es],
-  ['fr', fr],
-  ['ja', ja],
-  ['pl', pl],
-  ['ru', ru],
-  ['uz', uz],
-];
+export default locales;
 
-export const languages = localePairs.map((locale) => locale[0]);
+export const languages = locales.map((locale) => locale.language);
 
-export const embedLocales = fromPairs(localePairs);
+export const embeddedLocales = locales.reduce(
+  (result, locale) => ({
+    ...result,
+    [locale.language]: locale.embeddedLocale,
+  }),
+  {},
+);

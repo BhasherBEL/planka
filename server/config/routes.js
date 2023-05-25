@@ -11,7 +11,7 @@
 module.exports.routes = {
   'POST /api/access-tokens': 'access-tokens/create',
   'POST /api/access-tokens/exchange': 'access-tokens/exchange',
-
+  'DELETE /api/access-tokens/me': 'access-tokens/delete',
   'GET /api/users': 'users/index',
   'POST /api/users': 'users/create',
   'GET /api/users/:id': 'users/show',
@@ -38,6 +38,7 @@ module.exports.routes = {
   'DELETE /api/boards/:id': 'boards/delete',
 
   'POST /api/boards/:boardId/memberships': 'board-memberships/create',
+  'PATCH /api/board-memberships/:id': 'board-memberships/update',
   'DELETE /api/board-memberships/:id': 'board-memberships/delete',
 
   'POST /api/boards/:boardId/labels': 'labels/create',
@@ -48,8 +49,7 @@ module.exports.routes = {
   'PATCH /api/lists/:id': 'lists/update',
   'DELETE /api/lists/:id': 'lists/delete',
 
-  'GET /api/boards/:boardId/cards': 'cards/index',
-  'POST /api/boards/:boardId/cards': 'cards/create',
+  'POST /api/lists/:listId/cards': 'cards/create',
   'GET /api/cards/:id': 'cards/show',
   'PATCH /api/cards/:id': 'cards/update',
   'DELETE /api/cards/:id': 'cards/delete',
@@ -75,6 +75,16 @@ module.exports.routes = {
   'GET /api/notifications': 'notifications/index',
   'GET /api/notifications/:id': 'notifications/show',
   'PATCH /api/notifications/:ids': 'notifications/update',
+
+  'GET /attachments/:id/download/:filename': {
+    action: 'attachments/download',
+    skipAssets: false,
+  },
+
+  'GET /attachments/:id/download/thumbnails/cover-256.:extension': {
+    action: 'attachments/download-thumbnail',
+    skipAssets: false,
+  },
 
   'GET /*': {
     view: 'index',

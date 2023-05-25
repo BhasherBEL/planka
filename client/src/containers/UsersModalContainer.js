@@ -1,12 +1,12 @@
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
-import { usersExceptCurrentSelector } from '../selectors';
-import { closeModal, deleteUser, updateUser } from '../actions/entry';
+import selectors from '../selectors';
+import entryActions from '../entry-actions';
 import UsersModal from '../components/UsersModal';
 
 const mapStateToProps = (state) => {
-  const users = usersExceptCurrentSelector(state);
+  const users = selectors.selectUsersExceptCurrent(state);
 
   return {
     items: users,
@@ -16,9 +16,15 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) =>
   bindActionCreators(
     {
-      onUpdate: updateUser,
-      onDelete: deleteUser,
-      onClose: closeModal,
+      onUpdate: entryActions.updateUser,
+      onUsernameUpdate: entryActions.updateUserUsername,
+      onUsernameUpdateMessageDismiss: entryActions.clearUserUsernameUpdateError,
+      onEmailUpdate: entryActions.updateUserEmail,
+      onEmailUpdateMessageDismiss: entryActions.clearUserEmailUpdateError,
+      onPasswordUpdate: entryActions.updateUserPassword,
+      onPasswordUpdateMessageDismiss: entryActions.clearUserPasswordUpdateError,
+      onDelete: entryActions.deleteUser,
+      onClose: entryActions.closeModal,
     },
     dispatch,
   );
